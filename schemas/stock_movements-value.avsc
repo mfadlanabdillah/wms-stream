@@ -18,9 +18,9 @@
     { "name": "user_id", "type": "long", "doc": "Operator who recorded the movement." },
     {
       "name": "created_at",
-      "type": { "type": "long", "logicalType": "timestamp-millis" },
-      "doc": "Event time used as the Flink watermark column."
+      "type": { "type": "long", "logicalType": "timestamp-micros" },
+      "doc": "Movement timestamp. Debezium emits Postgres timestamps as microseconds since epoch."
     },
-    { "name": "updated_at", "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }], "default": null }
+    { "name": "updated_at", "type": ["null", { "type": "long", "logicalType": "timestamp-micros" }], "default": null }
   ]
 }

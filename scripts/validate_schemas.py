@@ -25,8 +25,8 @@ SAMPLES = {
         "reference_no": "SO-2026-00912",
         "note": None,
         "user_id": 5,
-        "created_at": 1790000000000,
-        "updated_at": 1790000000000,
+        "created_at": 1790000000000000,
+        "updated_at": 1790000000000000,
     },
     "products-value": {
         "id": 412,
@@ -101,7 +101,10 @@ def main() -> int:
             # fastavro decodes logicalType timestamp-millis into an aware
             # datetime, so normalise back to epoch millis before comparing.
             if isinstance(actual, datetime) and isinstance(expected, int):
-                actual = int(actual.timestamp() * 1000)
+                # timestamp-millis decodes to ms-precision, timestamp-micros
+                # to us-precision; normalise using the field's own scale.
+                epoch = actual.timestamp()
+                actual = int(round(epoch * (1_000_000 if expected > 10**14 else 1_000)))
             if actual != expected:
                 mismatch[key] = (expected, actual)
         if mismatch:
