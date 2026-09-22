@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "LowStockAlert",
+  "namespace": "id.wms.alerts",
+  "doc": "Derived stream produced by Flink SQL. One record whenever on-hand stock for a SKU at a warehouse crosses below its reorder point. Consumed by the HTTP Sink connector to notify purchasing.",
+  "fields": [
+    { "name": "warehouse_code", "type": "string" },
+    { "name": "warehouse_name", "type": "string" },
+    { "name": "sku", "type": "string" },
+    { "name": "product_name", "type": "string" },
+    { "name": "unit", "type": "string" },
+    { "name": "on_hand", "type": "int", "doc": "Running on-hand quantity at alert time." },
+    { "name": "min_stock", "type": "int", "doc": "Reorder point breached." },
+    { "name": "shortfall", "type": "int", "doc": "min_stock - on_hand. Suggested purchase quantity." },
+    {
+      "name": "severity",
+      "type": { "type": "enum", "name": "Severity", "symbols": ["WARNING", "CRITICAL", "STOCKOUT"] },
+      "doc": "STOCKOUT when on_hand <= 0, CRITICAL below half the reorder point, else WARNING."
+    },
+    { "name": "detected_at", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+  ]
+}

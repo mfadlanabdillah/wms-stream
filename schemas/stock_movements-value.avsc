@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "StockMovement",
+  "namespace": "id.wms.inventory",
+  "doc": "CDC envelope payload for public.stock_movements — every inbound, outbound and adjustment event in the warehouse. Emitted by the Confluent Postgres CDC Source V2 connector.",
+  "fields": [
+    { "name": "id", "type": "long", "doc": "Primary key of the movement row." },
+    { "name": "product_id", "type": "long", "doc": "FK -> products.id" },
+    { "name": "location_id", "type": "long", "doc": "FK -> locations.id (bin/rack inside a warehouse)" },
+    {
+      "name": "type",
+      "type": { "type": "enum", "name": "MovementType", "symbols": ["in", "out", "adjust"] },
+      "doc": "in = goods receipt, out = shipment/picking, adjust = stock opname correction."
+    },
+    { "name": "qty", "type": "int", "doc": "Signed quantity. Negative for out and for downward adjustments." },
+    { "name": "reference_no", "type": ["null", "string"], "default": null, "doc": "PO / SO / transfer document number." },
+    { "name": "note", "type": ["null", "string"], "default": null },
+    { "name": "user_id", "type": "long", "doc": "Operator who recorded the movement." },
+    {
+      "name": "created_at",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Event time used as the Flink watermark column."
+    },
+    { "name": "updated_at", "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }], "default": null }
+  ]
+}

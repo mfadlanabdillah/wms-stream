@@ -1,0 +1,61 @@
+{
+  "_comment": [
+    "Confluent Cloud fully-managed PostgreSQL CDC Source V2 (Debezium).",
+    "Streams the WMS operational tables out of Postgres into Kafka with zero",
+    "application change - the Laravel WMS keeps writing to Postgres exactly as",
+    "before, and every INSERT/UPDATE/DELETE lands in Kafka.",
+    "",
+    "Property names verified against:",
+    "https://docs.confluent.io/cloud/current/connectors/cc-postgresql-cdc-source-v2-debezium/cc-postgresql-cdc-source-v2-debezium.html",
+    "",
+    "Launch with:",
+    "  confluent connect cluster create --config-file connectors/postgres-cdc-source.json",
+    "",
+    "Topics created automatically as <topic.prefix>.<schema>.<table>:",
+    "  wms.public.stock_movements",
+    "  wms.public.products",
+    "  wms.public.locations",
+    "  wms.public.warehouses",
+    "",
+    "The ExtractNewRecordState transform unwraps the Debezium envelope so the",
+    "topic value matches the flat Avro schemas in schemas/ (and so Flink can read",
+    "the topics directly as changelog tables).",
+    "",
+    "Replace every <...> placeholder. Do NOT commit real secrets - keep this file",
+    "as the template and inject credentials from your shell or a secret manager."
+  ],
+
+  "connector.class": "PostgresCdcSourceV2",
+  "name": "wms-postgres-cdc-source",
+  "tasks.max": "1",
+
+  "kafka.auth.mode": "KAFKA_API_KEY",
+  "kafka.api.key": "<KAFKA_API_KEY>",
+  "kafka.api.secret": "<KAFKA_API_SECRET>",
+
+  "database.hostname": "<POSTGRES_HOST>",
+  "database.port": "5432",
+  "database.user": "<CDC_USER>",
+  "database.password": "<CDC_PASSWORD>",
+  "database.dbname": "wms",
+  "database.sslmode": "require",
+
+  "topic.prefix": "wms",
+  "slot.name": "wms_cdc_slot",
+  "publication.name": "wms_cdc_publication",
+  "publication.autocreate.mode": "filtered",
+  "plugin.name": "pgoutput",
+
+  "table.include.list": "public.stock_movements,public.products,public.locations,public.warehouses",
+
+  "snapshot.mode": "initial",
+  "tombstones.on.delete": "false",
+
+  "output.data.format": "AVRO",
+  "output.key.format": "AVRO",
+
+  "transforms": "unwrap",
+  "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+  "transforms.unwrap.delete.tombstones.handling.mode": "rewrite",
+  "transforms.unwrap.add.fields": "op,source.ts_ms"
+}

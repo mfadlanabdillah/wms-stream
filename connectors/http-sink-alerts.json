@@ -1,0 +1,49 @@
+{
+  "_comment": [
+    "Confluent Cloud fully-managed HTTP Sink V2.",
+    "Pushes every low-stock alert produced by Flink straight into the WMS",
+    "notification endpoint, so purchasing sees a reorder signal in seconds",
+    "instead of on the next daily stock report.",
+    "",
+    "Property names verified against:",
+    "https://docs.confluent.io/cloud/current/connectors/cc-http-sink-v2.html",
+    "",
+    "Launch with:",
+    "  confluent connect cluster create --config-file connectors/http-sink-alerts.json"
+  ],
+
+  "connector.class": "HttpSinkV2",
+  "name": "wms-low-stock-http-sink",
+  "tasks.max": "1",
+
+  "kafka.auth.mode": "KAFKA_API_KEY",
+  "kafka.api.key": "<KAFKA_API_KEY>",
+  "kafka.api.secret": "<KAFKA_API_SECRET>",
+
+  "topics": "wms.alerts.low_stock",
+  "input.data.format": "AVRO",
+  "value.subject.name.strategy": "TopicNameStrategy",
+
+  "http.api.base.url": "<https://wms.example.co.id/api/v1>",
+  "auth.type": "NONE",
+  "https.ssl.enabled": "true",
+  "behavior.on.error": "LOG",
+  "report.errors.as": "ERROR_STRING",
+
+  "apis.num": "1",
+  "api1.http.api.path": "/alerts/low-stock",
+  "api1.topics": "wms.alerts.low_stock",
+  "api1.http.request.method": "POST",
+  "api1.request.body.format": "JSON",
+  "api1.http.request.headers": "Content-Type:application/json",
+  "api1.http.request.sensitive.headers": "Authorization: Bearer <WMS_API_TOKEN>",
+  "api1.max.batch.size": "1",
+  "api1.batch.json.as.array": "false",
+  "api1.max.retries": "5",
+  "api1.retry.backoff.policy": "EXPONENTIAL_WITH_JITTER",
+  "api1.retry.backoff.ms": "3000",
+  "api1.retry.on.status.codes": "500-",
+  "api1.behavior.on.null.values": "IGNORE",
+  "api1.http.connect.timeout.ms": "30000",
+  "api1.http.request.timeout.ms": "30000"
+}

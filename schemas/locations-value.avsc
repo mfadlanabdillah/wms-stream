@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "Location",
+  "namespace": "id.wms.master",
+  "doc": "CDC payload for public.locations — a bin/rack belonging to one warehouse. Joined so an alert names the exact site (Jakarta, Balikpapan, Kendari, Sofifi, ...).",
+  "fields": [
+    { "name": "id", "type": "long" },
+    { "name": "warehouse_id", "type": "long", "doc": "FK -> warehouses.id" },
+    { "name": "code", "type": "string", "doc": "Bin code, unique per warehouse." },
+    { "name": "name", "type": "string" },
+    { "name": "created_at", "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }], "default": null },
+    { "name": "updated_at", "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }], "default": null }
+  ]
+}

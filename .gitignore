@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Never commit filled-in connector configs — the templates in connectors/
+# are tracked, any local copy with real credentials is not.
+connectors/*.local.json
+*.env
+.env

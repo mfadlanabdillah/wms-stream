@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "Product",
+  "namespace": "id.wms.master",
+  "doc": "CDC payload for public.products. Compacted topic, used as a Flink temporal-join lookup table so alerts carry SKU, unit and reorder point.",
+  "fields": [
+    { "name": "id", "type": "long" },
+    { "name": "sku", "type": "string", "doc": "Unique stock keeping unit code." },
+    { "name": "name", "type": "string" },
+    { "name": "unit", "type": "string", "doc": "Unit of measure: PCS, BOX, LTR, KG." },
+    { "name": "barcode", "type": ["null", "string"], "default": null },
+    { "name": "min_stock", "type": "int", "default": 0, "doc": "Reorder point. Drives the low-stock alert threshold." },
+    { "name": "created_at", "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }], "default": null },
+    { "name": "updated_at", "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }], "default": null }
+  ]
+}
