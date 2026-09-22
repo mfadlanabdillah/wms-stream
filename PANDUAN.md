@@ -14,14 +14,14 @@ setelah data benar-benar mengalir. Jangan lompat ke screenshot.
 ## Checklist singkat
 
 - [ ] 1. Cek Postgres demo + tunnel masih hidup
-- [ ] 2. Buat cluster Confluent Cloud + Schema Registry
+- [ ] 2. Buat cluster Confluent Cloud (Schema Registry otomatis)
 - [ ] 3. Buat API key Kafka
 - [ ] 4. Jalankan connector Postgres CDC
 - [ ] 5. Verifikasi topic terbentuk
 - [ ] 6. Jalankan Flink SQL
-- [ ] 7. Picu alert dengan data baru
+- [ ] 7. Picu alert dengan data baru ⏱
 - [ ] 8. Jalankan HTTP Sink
-- [ ] 9. Screenshot Stream Lineage
+- [ ] 9. Screenshot Stream Lineage ⏱ **dalam 10 menit setelah langkah 7**
 - [ ] 10. Isi form
 
 ---
@@ -75,11 +75,44 @@ Console → **Environments** → pilih environment → **Create cluster**.
 | Region | terdekat dengan lokasimu | Menekan latensi CDC |
 | Nama | `wms-dsp` | — |
 
-Setelah cluster jadi, aktifkan **Schema Registry** untuk environment itu
-kalau diminta (Environments → Stream Governance → *Enable*).
+### Schema Registry: tidak perlu diaktifkan manual
 
-Ini wajib, bukan opsional: format Avro dan penilaian Stream Governance
-bergantung padanya.
+Tidak ada tombol "Enable Schema Registry" — pertanyaan yang wajar, karena
+banyak tutorial lama masih menyebutkannya.
+
+Yang sebenarnya terjadi:
+
+- Paket **Stream Governance Essentials** sudah terpasang otomatis di
+  setiap environment (gratis)
+- Schema Registry **di-provision sendiri** begitu cluster Kafka pertama
+  di environment itu selesai dibuat
+
+Jadi setelah langkah di atas, Schema Registry sudah ada. Tidak ada aksi
+tambahan.
+
+Essentials mencakup 100 schema gratis; proyek ini memakai 6. Kamu tidak
+akan kena biaya.
+
+Untuk memastikan (opsional): **Environments** → pilih environment →
+panel kanan menampilkan **Stream Governance** dengan package Essentials
+dan endpoint Schema Registry. Kalau belum muncul, cluster-mu belum
+selesai provisioning.
+
+> **Region Schema Registry mengikuti cluster pertama, dan tidak bisa
+> diubah.** Kalau nanti kamu ingin cluster di region lain, buat
+> environment baru.
+
+### Satu batasan yang memengaruhi langkah 9
+
+Di paket Essentials, **Stream Lineage hanya menampilkan 10 menit
+terakhir** (Advanced: 7 hari).
+
+Konsekuensinya nyata: screenshot lineage harus diambil **dalam 10 menit
+setelah data terakhir mengalir**. Kalau kamu jalankan Flink lalu istirahat
+satu jam, grafiknya akan tampak kosong.
+
+Karena itu langkah 7 (picu data live) ditaruh persis sebelum langkah 9.
+Bukan kebetulan.
 
 ---
 
@@ -272,6 +305,11 @@ Itu bukti end-to-end: Postgres → CDC → Kafka → Flink → HTTP.
 **Ini yang diminta form, dan urutannya sengaja ditaruh di akhir.**
 
 Console → menu kiri → **Stream Lineage**.
+
+> **Kerjakan ini dalam 10 menit setelah langkah 7.** Paket Essentials
+> hanya menyimpan lineage point-in-time 10 menit terakhir. Lewat dari itu,
+> grafiknya menyusut dan node connector/Flink bisa hilang. Kalau kamu
+> sudah terlalu lama menunggu, ulangi langkah 7 untuk menyegarkan trafik.
 
 Pilih topic `wms.public.stock_movements` sebagai titik masuk. Grafik akan
 menampilkan jalur penuh:

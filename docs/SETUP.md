@@ -27,8 +27,15 @@ Confluent Cloud console → **Environments** → your environment →
   latency low
 - Name: `wms-dsp`
 
-Then enable **Schema Registry** for the environment if prompted — the
-Avro formats and Stream Governance features depend on it.
+Schema Registry needs no separate action: the free Stream Governance
+Essentials package is attached to every environment by default, and the
+Schema Registry cluster is provisioned automatically once the first Kafka
+cluster in the environment is created. Essentials includes 100 free
+schemas; this project uses 6.
+
+Note that Essentials keeps only the **last 10 minutes** of point-in-time
+Stream Lineage (Advanced keeps 7 days). Capture the lineage screenshot
+shortly after data last flowed, or the graph will look empty.
 
 ## 2. Create API keys
 
