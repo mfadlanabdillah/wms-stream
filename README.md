@@ -161,19 +161,56 @@ docker exec wms-cdc-demo psql -U postgres -d wms \
 umask 077; printf 'CDC_PASSWORD=%s\n' "$PW" > .env.demo.local
 ```
 
-Then publish it:
+Then publish it. This uses [bore](https://github.com/ekzhang/bore) — open
+source, no signup, no credit card:
 
 ```bash
-~/.local/bin/ngrok config add-authtoken <your-token>   # free account
+curl -sL https://github.com/ekzhang/bore/releases/download/v0.6.0/bore-v0.6.0-x86_64-unknown-linux-musl.tar.gz \
+    | tar xz -C ~/.local/bin
+
 ./scripts/start_tunnel.sh
 ```
 
 The script prints the `database.hostname` and `database.port` to paste
 into `connectors/postgres-cdc-source.json`. Keep it running — closing it
-breaks the connector's database connection.
+breaks the connector's database connection, and the public port changes
+on every restart.
 
-One gotcha: the demo Postgres has no TLS certificate, so set
-`database.sslmode` to `prefer` (not `require`) in the connector config.
+Two gotchas worth knowing:
+
+- **ngrok does not work here on a free account.** TCP endpoints are
+  refused until you add a credit card (`ERR_NGROK_8013`), and this
+  pipeline needs raw TCP rather than HTTP. bore has no such gate.
+- **`database.sslmode` must be `prefer`, not `require`** — the demo
+  Postgres has no TLS certificate.
+
+Verified over the public tunnel, from a container with no access to the
+local Docker network:
+
+```
+          status            | current_user  | server_port
+ ---------------------------+---------------+-------------
+ CONNECTED VIA PUBLIC TUNNEL| confluent_cdc |        5432
+
+ visible_sites
+ ---------------
+             15
+```
+
+The replication protocol — what Debezium actually speaks, not just
+ordinary queries — also works through it:
+
+```
+      systemid       | timeline |  xlogpos  | dbname
+---------------------+----------+-----------+--------
+ 7688292940824932395 |        1 | 0/1999B18 | wms
+
+change_events | 4
+```
+
+Exposing a database to the internet is safe here only because the data is
+synthetic. Do not point this at anything real, and stop the tunnel when
+you are done.
 
 ## Running it
 
