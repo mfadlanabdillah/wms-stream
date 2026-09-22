@@ -131,6 +131,50 @@ wal_bytes     | 355 bytes
 Draft answers for every form field — including three lengths of the app
 description — are in [docs/SUBMISSION.md](docs/SUBMISSION.md).
 
+## Exposing Postgres to Confluent Cloud
+
+A fully-managed connector runs in Confluent's VPC, so it cannot reach a
+database on your laptop behind NAT. Two things are needed: a Postgres with
+logical decoding enabled, and a public address for it.
+
+The WMS dev database (Laravel Sail, `postgres:18-alpine`) runs with the
+default `wal_level=replica`, so Debezium cannot read it. Rather than
+reconfigure and restart your dev database, bring up a separate CDC-ready
+instance:
+
+```bash
+docker compose -f docker-compose.demo.yml up -d
+
+# wait for initdb to finish, then apply the CDC prerequisites
+docker compose -f docker-compose.demo.yml exec -T postgres \
+    psql -U postgres -d wms -f /scripts/postgres_cdc_setup.sql
+```
+
+This loads the WMS schema, seeds all 15 sites, creates the publication and
+the least-privilege `confluent_cdc` role. Set that role's password and keep
+it out of git:
+
+```bash
+PW=$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)
+docker exec wms-cdc-demo psql -U postgres -d wms \
+    -c "ALTER ROLE confluent_cdc WITH PASSWORD '$PW';"
+umask 077; printf 'CDC_PASSWORD=%s\n' "$PW" > .env.demo.local
+```
+
+Then publish it:
+
+```bash
+~/.local/bin/ngrok config add-authtoken <your-token>   # free account
+./scripts/start_tunnel.sh
+```
+
+The script prints the `database.hostname` and `database.port` to paste
+into `connectors/postgres-cdc-source.json`. Keep it running — closing it
+breaks the connector's database connection.
+
+One gotcha: the demo Postgres has no TLS certificate, so set
+`database.sslmode` to `prefer` (not `require`) in the connector config.
+
 ## Running it
 
 See [docs/SETUP.md](docs/SETUP.md) for the full runbook.

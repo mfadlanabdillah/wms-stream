@@ -1,0 +1,48 @@
+# CDC-ready Postgres for the Confluent demo.
+#
+# The WMS dev database (Laravel Sail) runs postgres:18-alpine with default
+# settings, where wal_level is 'replica' — logical decoding is off, so the
+# Debezium connector cannot read it. Rather than reconfigure and restart the
+# dev database, this brings up a separate instance with logical decoding
+# enabled and the WMS schema loaded.
+#
+#   docker compose -f docker-compose.demo.yml up -d
+#   docker compose -f docker-compose.demo.yml exec -T postgres \
+#       psql -U postgres -d wms -f /scripts/postgres_cdc_setup.sql
+#
+# Port 55433 is used to avoid clashing with Sail (5432) and other local
+# Postgres containers.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: wms-cdc-demo
+    command:
+      - -c
+      - wal_level=logical
+      - -c
+      - max_replication_slots=4
+      - -c
+      - max_wal_senders=4
+      # Listen on all interfaces so the ngrok tunnel can reach it.
+      - -c
+      - listen_addresses=*
+    environment:
+      POSTGRES_DB: wms
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DEMO_DB_PASSWORD:-devday}
+    ports:
+      - '55433:5432'
+    volumes:
+      - ./scripts:/scripts:ro
+      # test_schema.sql builds the WMS tables and seeds all 15 sites on
+      # first boot. Files in initdb.d run once, in name order.
+      - ./scripts/test_schema.sql:/docker-entrypoint-initdb.d/10-wms-schema.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d wms']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  wms-cdc-demo-data:

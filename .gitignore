@@ -7,3 +7,6 @@ __pycache__/
 connectors/*.local.json
 *.env
 .env
+
+# Local demo credentials — never commit
+.env.demo.local

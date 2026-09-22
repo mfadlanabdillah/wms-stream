@@ -38,7 +38,8 @@
   "database.user": "<CDC_USER>",
   "database.password": "<CDC_PASSWORD>",
   "database.dbname": "wms",
-  "database.sslmode": "require",
+  "_sslmode_note": "Use 'prefer' when pointing at the ngrok-tunnelled demo Postgres (no TLS cert). Use 'require' against a real managed Postgres.",
+  "database.sslmode": "prefer",
 
   "topic.prefix": "wms",
   "slot.name": "wms_cdc_slot",
