@@ -41,9 +41,11 @@ LIMIT 20;
 --    heavy aggregate query against Postgres on every page load.
 -- ---------------------------------------------------------------------
 CREATE TABLE `wms.inventory.on_hand` (
+    -- Key columns must come first, and DISTRIBUTED BY must list them in
+    -- the same order — Confluent Cloud for Flink enforces both.
     warehouse_code   STRING,
-    warehouse_name   STRING,
     sku              STRING,
+    warehouse_name   STRING,
     product_name     STRING,
     unit             STRING,
     min_stock        INT,
@@ -60,8 +62,8 @@ WITH (
 INSERT INTO `wms.inventory.on_hand`
 SELECT
     w.code                  AS warehouse_code,
-    w.name                  AS warehouse_name,
     p.sku                   AS sku,
+    w.name                  AS warehouse_name,
     p.name                  AS product_name,
     p.unit                  AS unit,
     CAST(MAX(p.min_stock) AS INT) AS min_stock,
@@ -72,7 +74,7 @@ FROM `wms.public.stock_movements` AS m
 JOIN `wms.public.locations`  AS l ON m.location_id = l.id
 JOIN `wms.public.warehouses` AS w ON l.warehouse_id = w.id
 JOIN `wms.public.products`   AS p ON m.product_id  = p.id
-GROUP BY w.code, w.name, p.sku, p.name, p.unit;
+GROUP BY w.code, p.sku, w.name, p.name, p.unit;
 
 
 -- ---------------------------------------------------------------------
@@ -86,9 +88,10 @@ GROUP BY w.code, w.name, p.sku, p.name, p.unit;
 --    Schema matches schemas/low_stock_alerts-value.avsc.
 -- ---------------------------------------------------------------------
 CREATE TABLE `wms.alerts.low_stock` (
+    -- Key columns first, matching DISTRIBUTED BY order.
     warehouse_code STRING,
-    warehouse_name STRING,
     sku            STRING,
+    warehouse_name STRING,
     product_name   STRING,
     unit           STRING,
     on_hand        INT,
@@ -107,8 +110,8 @@ WITH (
 INSERT INTO `wms.alerts.low_stock`
 SELECT
     warehouse_code,
-    warehouse_name,
     sku,
+    warehouse_name,
     product_name,
     unit,
     on_hand,

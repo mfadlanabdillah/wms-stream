@@ -4,9 +4,9 @@
   "namespace": "id.wms.alerts",
   "doc": "Derived stream produced by Flink SQL. One record whenever on-hand stock for a SKU at a warehouse crosses below its reorder point. Consumed by the HTTP Sink connector to notify purchasing.",
   "fields": [
-    { "name": "warehouse_code", "type": "string" },
+    { "name": "warehouse_code", "type": "string", "doc": "Key column; ordered first to satisfy Flink's key-column-first rule." },
+    { "name": "sku", "type": "string", "doc": "Key column." },
     { "name": "warehouse_name", "type": "string" },
-    { "name": "sku", "type": "string" },
     { "name": "product_name", "type": "string" },
     { "name": "unit", "type": "string" },
     { "name": "on_hand", "type": "int", "doc": "Running on-hand quantity at alert time." },
