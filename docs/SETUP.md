@@ -9,8 +9,10 @@ for only renders once data has actually flowed.
 - A Confluent Cloud account (you have one; no cluster yet).
 - The WMS Postgres reachable from Confluent Cloud. If it only listens on
   localhost, expose it first — a fully-managed connector cannot reach a
-  laptop behind NAT. Options: an ngrok/Cloudflare TCP tunnel, or run the
-  WMS Postgres on a small cloud VM for the demo.
+  laptop behind NAT. See the "Exposing Postgres to Confluent Cloud"
+  section in the README: `docker-compose.demo.yml` plus
+  `scripts/start_tunnel.sh` handle this. Note that ngrok TCP is not an
+  option on a free account (it requires a credit card, `ERR_NGROK_8013`).
 - `confluent` CLI, if you prefer CLI over console:
   `curl -sL --http1.1 https://cnfl.io/cli | sh -s -- latest`
 

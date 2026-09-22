@@ -128,6 +128,9 @@ wal_bytes     | 355 bytes
 
 ## Submitting this project
 
+**[PANDUAN.md](PANDUAN.md)** — panduan lengkap bahasa Indonesia, dari nol
+sampai form terkirim (10 langkah, ±45–60 menit). Mulai dari sini.
+
 Draft answers for every form field — including three lengths of the app
 description — are in [docs/SUBMISSION.md](docs/SUBMISSION.md).
 
