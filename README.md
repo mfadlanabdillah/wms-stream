@@ -3,11 +3,12 @@
 Real-time inventory visibility and automated reorder alerting for a
 multi-site warehouse operation, built on Confluent Cloud.
 
-The existing WMS is a Laravel application on PostgreSQL serving six sites
-(Jakarta, Balikpapan, Kendari, Sofifi, Angsana, Muara Teweh). Stock levels
-were reconciled from per-warehouse spreadsheets, so a stockout was
-typically discovered a day late — after the order had already been
-promised to a customer.
+The existing WMS is a Laravel application on PostgreSQL serving 15
+locations across Indonesia — main warehouses (Jakarta, Balikpapan,
+Kendari, Sofifi, Angsana), service points (Muara Teweh, Qinfa Mangalau)
+and eight VHS sites. Stock levels were reconciled from per-location
+spreadsheets, so a stockout was typically discovered a day late — after
+the order had already been promised to a customer.
 
 This project streams the WMS database into Confluent with change data
 capture, computes on-hand stock per SKU per site continuously in Flink,
@@ -124,6 +125,11 @@ publication captured a live INSERT:
 change_events | 4
 wal_bytes     | 355 bytes
 ```
+
+## Submitting this project
+
+Draft answers for every form field — including three lengths of the app
+description — are in [docs/SUBMISSION.md](docs/SUBMISSION.md).
 
 ## Running it
 

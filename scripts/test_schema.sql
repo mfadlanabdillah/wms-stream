@@ -50,14 +50,23 @@ CREATE TABLE stock_movements (
 CREATE INDEX ON stock_movements (product_id, location_id);
 CREATE INDEX ON stock_movements (location_id, product_id);
 
--- Sites taken from the real inventory workbooks in ~/iti/wms.
+-- All 15 sites, taken from the REAL TIME INVENTORY workbooks in ~/iti/wms.
 INSERT INTO warehouses (code, name, created_at) VALUES
-    ('JKT', 'Jakarta',            NOW()),
-    ('BPN', 'Balikpapan',         NOW()),
-    ('KDI', 'Kendari',            NOW()),
-    ('SFF', 'Sofifi',             NOW()),
-    ('AGS', 'Angsana',            NOW()),
-    ('MTW', 'Service Point Muara Teweh', NOW());
+    ('JKT',     'Jakarta',                       NOW()),
+    ('BPN',     'Balikpapan',                    NOW()),
+    ('KDI',     'Kendari',                       NOW()),
+    ('SFF',     'Sofifi',                        NOW()),
+    ('AGS',     'Angsana',                       NOW()),
+    ('SPMTW',   'Service Point Muara Teweh',     NOW()),
+    ('SPQFM',   'Service Point Qinfa Mangalau',  NOW()),
+    ('VHSHTE',  'VHS HTE',                       NOW()),
+    ('VHSJTG',  'VHS Jatra Gebe',                NOW()),
+    ('VHSKIM',  'VHS KIM',                       NOW()),
+    ('VHSKTM',  'VHS KTM',                       NOW()),
+    ('VHSMTL',  'VHS MTL',                       NOW()),
+    ('VHSTID1', 'VHS TIDB1',                     NOW()),
+    ('VHSTMS1', 'VHS TMSB1',                     NOW()),
+    ('VHSTMS2', 'VHS TMSB2',                     NOW());
 
 INSERT INTO locations (warehouse_id, code, name, created_at)
 SELECT w.id, w.code || '-A-01', 'Rack A Level 1', NOW() FROM warehouses w;
