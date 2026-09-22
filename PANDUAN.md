@@ -327,6 +327,71 @@ wms.public.warehouses
 Klik `wms.public.warehouses` → tab **Messages**. Harus ada 15 record
 (Jakarta, Balikpapan, Kendari, Sofifi, Angsana, 2 service point, 8 VHS).
 
+### Kalau muncul `__raw__` alih-alih data
+
+Kalau isi message tampak seperti ini:
+
+```json
+{ "__raw__": "AAABhqgMClNQTVRXMlNlcnZpY2UgUG9pbnQgTXVhcmEgVGV3ZWg..." }
+```
+
+**Datanya tidak rusak, dan tidak ada yang salah dengan connector-mu.**
+
+Itu base64 dari byte mentah Kafka. Message browser menampilkannya apa
+adanya karena belum berhasil mengambil schema untuk record itu — biasanya
+karena viewer-nya membuka topic beberapa saat sebelum schema selesai
+terdaftar.
+
+Buktikan sendiri — salin isi `__raw__` lalu:
+
+```bash
+.venv/bin/python scripts/decode_message.py '<paste base64 di sini>' --table warehouses
+```
+
+Hasilnya:
+
+```
+magic byte  : 0  (0 = Confluent wire format, OK)
+schema id   : 100008
+
+decoded value:
+{
+  "id": 6,
+  "code": "SPMTW",
+  "name": "Service Point Muara Teweh",
+  "created_at": "2026-09-22 09:43:15.087126+00:00",
+  "__deleted": "false",
+  "__op": "r",
+  "__source_ts_ms": 1790072606903
+}
+
+__op = 'r'  ->  read (initial snapshot)
+__source_ts_ms present -> the ExtractNewRecordState SMT is applied correctly
+```
+
+Justru ini kabar baik, tiga sekaligus:
+
+- **Avro bekerja** — byte pertama `0` menandakan Confluent wire format,
+  dan schema ID `100008` berarti schema sudah terdaftar di Schema Registry
+- **SMT-mu benar** — field `__op` dan `__source_ts_ms` muncul, artinya
+  `ExtractNewRecordState` dengan `add.fields` sudah aktif
+- **`__op = 'r'`** berarti record ini dari snapshot awal, sesuai
+  `snapshot.mode: initial`
+
+Skripnya mendukung `--table warehouses|products|locations|stock_movements`.
+
+Agar UI ikut menampilkannya terbaca, coba salah satu:
+
+- **Refresh halaman** dan buka ulang topic — paling sering langsung beres
+- Cek **Environments → Stream Governance → Schemas**; harus ada subject
+  `wms.public.warehouses-value`. Kalau ada, Schema Registry sehat
+- Pastikan kamu membuka topic dari cluster dan environment yang benar
+
+Yang terpenting: **jangan ubah connector-mu.** Ini murni soal tampilan.
+Flink membaca schema langsung dari Schema Registry, bukan dari message
+browser, jadi langkah 6 akan jalan normal meski UI masih menampilkan
+`__raw__`.
+
 Kalau topic kosong padahal connector *Running*, cek tab **Logs** di
 halaman connector — pesan errornya biasanya spesifik.
 
