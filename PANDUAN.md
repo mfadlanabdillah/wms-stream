@@ -131,36 +131,163 @@ connector.
 
 Console → **Connectors** → cari *Postgres CDC Source V2*.
 
-Di halaman konfigurasi ada tombol **Switch to JSON** — pakai itu, jauh
-lebih cepat daripada mengisi 20 field manual. Tempel isi
-`connectors/postgres-cdc-source.json`, lalu ganti placeholder:
+Wizard-nya 6 layar. Ada **dua cara** — pilih salah satu.
+
+### Cara A (tercepat): Switch to JSON
+
+Di layar wizard mana pun, cari tombol **Switch to JSON** di kanan atas.
+Tempel konfigurasi berikut, lalu langsung lompat ke *Review and launch*.
 
 ```json
 {
-  "kafka.api.key":     "<dari langkah 3>",
-  "kafka.api.secret":  "<dari langkah 3>",
+  "connector.class": "PostgresCdcSourceV2",
+  "name": "wms-postgres-cdc-source",
+  "tasks.max": "1",
+  "kafka.auth.mode": "KAFKA_API_KEY",
+  "kafka.api.key": "<key dari langkah 3>",
+  "kafka.api.secret": "<secret dari langkah 3>",
   "database.hostname": "bore.pub",
-  "database.port":     "11033",
-  "database.user":     "confluent_cdc",
+  "database.port": "11033",
+  "database.user": "confluent_cdc",
   "database.password": "<dari .env.demo.local>",
-  "database.dbname":   "wms",
-  "database.sslmode":  "prefer"
+  "database.dbname": "wms",
+  "database.sslmode": "prefer",
+  "topic.prefix": "wms",
+  "slot.name": "wms_cdc_slot",
+  "publication.name": "wms_cdc_publication",
+  "publication.autocreate.mode": "filtered",
+  "plugin.name": "pgoutput",
+  "table.include.list": "public.stock_movements,public.products,public.locations,public.warehouses",
+  "snapshot.mode": "initial",
+  "tombstones.on.delete": "false",
+  "output.data.format": "AVRO",
+  "output.key.format": "AVRO",
+  "transforms": "unwrap",
+  "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+  "transforms.unwrap.delete.tombstones.handling.mode": "rewrite",
+  "transforms.unwrap.add.fields": "op,source.ts_ms"
 }
 ```
 
-Hapus juga key `_comment` dan `_sslmode_note` — itu catatan untuk manusia,
-Confluent akan menolaknya sebagai property tak dikenal.
+Ini sama dengan `connectors/postgres-cdc-source.json` tetapi key
+`_comment` dan `_sslmode_note` **sudah dibuang** — Confluent menolak
+property yang tidak dikenal. Kalau kamu menempel dari file itu langsung,
+hapus dulu dua key tersebut.
 
-Tiga hal yang paling sering menggagalkan langkah ini:
+### Cara B: isi manual per layar
+
+Kalau lebih nyaman lewat form, ini isian tiap layar:
+
+**1. Topic selection**
+
+| Field | Isi |
+|---|---|
+| Topic prefix | `wms` |
+| Partitions | `1` (biarkan default) |
+
+> Jangan naikkan partition di atas 1. Topic CDC kehilangan jaminan urutan
+> untuk tabel tanpa primary key kalau partisinya lebih dari satu — dan
+> urutan itu justru yang membuat perhitungan stok benar.
+
+Klik **Continue**.
+
+**2. Kafka access**
+
+Pilih **Use an existing API key**, lalu tempel key + secret dari
+langkah 3. (Opsi *My account* juga jalan untuk demo; *Service account*
+untuk produksi.)
+
+Klik **Continue**.
+
+**3. Authentication** — ini layar koneksi database
+
+| Field | Isi |
+|---|---|
+| Authentication method | `Password` |
+| Database hostname | `bore.pub` |
+| Database port | `11033` |
+| Database username | `confluent_cdc` |
+| Database password | dari `.env.demo.local` |
+| Database name | `wms` |
+| SSL mode | **`prefer`** |
+
+> `prefer` itu wajib di sini. Postgres demo tidak punya sertifikat TLS,
+> jadi `require` akan gagal konek. Kebetulan `prefer` juga default-nya.
+
+Biarkan *Use secret manager* mati, dan semua field SSL certificate kosong.
+
+Klik **Continue**.
+
+**4. Configuration**
+
+*Output messages:*
+
+| Field | Isi |
+|---|---|
+| Output record value format | **AVRO** |
+| Output record key format | **AVRO** |
+
+AVRO penting — itu yang mendaftarkan schema ke Schema Registry, dan
+Stream Governance adalah salah satu kriteria penilaian juri.
+
+*Database config:*
+
+| Field | Isi |
+|---|---|
+| Slot name | `wms_cdc_slot` |
+| Publication name | `wms_cdc_publication` |
+
+*Connector config:*
+
+| Field | Isi |
+|---|---|
+| Snapshot mode | `initial` |
+| Tables included | `public.stock_movements,public.products,public.locations,public.warehouses` |
+
+Biarkan *Tables excluded* kosong — dua property itu tidak bisa dipakai
+bersamaan.
+
+Lalu buka **Show advanced configurations** → cari bagian **Transforms** →
+tambah SMT:
+
+| Field | Isi |
+|---|---|
+| Transform type | `ExtractNewRecordState` |
+| Delete tombstones handling mode | `rewrite` |
+| Add fields | `op,source.ts_ms` |
+
+SMT ini membuka "envelope" Debezium sehingga isi topic menjadi baris yang
+rata — cocok dengan Avro schema di `schemas/` dan bisa langsung dibaca
+Flink. Tanpa ini, Flink akan melihat struktur bersarang
+`before`/`after`/`source` dan query di langkah 6 tidak jalan.
+
+Klik **Continue**.
+
+**5. Sizing**
+
+Connector ini hanya mendukung **1 task**. Tidak ada yang perlu diubah.
+
+Klik **Continue**.
+
+**6. Review and launch**
+
+Periksa konfigurasinya, ganti nama connector kalau mau, lalu **Launch**.
+
+Status akan berjalan dari **Provisioning** → **Running**. Biasanya 1–3
+menit karena connector mengambil snapshot awal lebih dulu.
+
+### Kalau gagal
 
 | Gejala | Penyebab |
 |---|---|
-| connection timeout | tunnel mati, atau port sudah berganti |
-| SSL error | `sslmode` masih `require` — demo Postgres tanpa sertifikat TLS, harus `prefer` |
-| `Unknown configuration` | key `_comment` / `_sslmode_note` belum dihapus |
+| connection timeout | tunnel mati, atau port sudah berganti — cek langkah 1 |
+| SSL / TLS error | SSL mode masih `require`, harus `prefer` |
+| `Unknown configuration` | key `_comment` / `_sslmode_note` ikut ter-paste |
+| `replication slot already exists` | hapus dulu: `docker exec wms-cdc-demo psql -U postgres -d wms -c "SELECT pg_drop_replication_slot('wms_cdc_slot');"` |
+| `permission denied for table` | prasyarat Postgres belum dijalankan — lihat README |
 
-Klik **Continue** sampai **Launch**, lalu tunggu status **Running**
-(biasanya 1–3 menit, karena connector melakukan snapshot awal).
+Pesan error lengkap ada di tab **Logs** pada halaman connector. Itu
+biasanya spesifik dan langsung menunjuk penyebabnya.
 
 ---
 
