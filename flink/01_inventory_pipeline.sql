@@ -68,8 +68,10 @@ SELECT
     p.unit                  AS unit,
     CAST(MAX(p.min_stock) AS INT) AS min_stock,
     CAST(SUM(m.qty) AS INT)       AS on_hand,
-    -- CDC timestamps arrive as TIMESTAMP(6); cast to match the column type.
-    CAST(MAX(m.created_at) AS TIMESTAMP_LTZ(3)) AS last_movement_at
+    -- Debezium encodes created_at as timestamp-micros, which Flink surfaces
+    -- as a numeric column. CAST to TIMESTAMP_LTZ is rejected, so convert
+    -- explicitly: divide micros by 1000 to get millis, precision 3.
+    TO_TIMESTAMP_LTZ(MAX(m.created_at) / 1000, 3) AS last_movement_at
 FROM `wms.public.stock_movements` AS m
 JOIN `wms.public.locations`  AS l ON m.location_id = l.id
 JOIN `wms.public.warehouses` AS w ON l.warehouse_id = w.id
