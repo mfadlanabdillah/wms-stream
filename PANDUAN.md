@@ -446,6 +446,47 @@ yang masuk akal adalah connector diluncurkan dengan format JSON. Perbaiki
 di halaman connector: **Configuration → Output record value format →
 AVRO** (dan key format AVRO juga), lalu restart connector.
 
+### JANGAN daftarkan schema manual
+
+Kalau kamu menemukan tombol **Add Schema** dan muncul JSON seperti ini:
+
+```json
+{
+  "type": "record",
+  "namespace": "com.mycorp.mynamespace",
+  "name": "sampleRecord",
+  "doc": "Sample schema to help you get started.",
+  "fields": [
+    { "name": "my_field1", "type": "int" },
+    ...
+  ]
+}
+```
+
+**Tutup dialognya. Jangan klik Validate, jangan Save.**
+
+Itu template contoh bawaan Confluent — `com.mycorp.mynamespace`,
+`sampleRecord`, "Sample schema to help you get started". Isinya sama
+untuk semua orang dan tidak ada kaitannya dengan datamu. Munculnya
+template itu **bukan** bukti bahwa schema-mu tidak ada.
+
+Kalau kamu daftarkan ke subject `wms.public.warehouses-value`, dua
+kemungkinan — keduanya merugikan:
+
+- **Gagal compatibility check**, karena `my_field1/2/3` bertabrakan total
+  dengan schema CDC
+- **Atau lolos sebagai versi 2**, lalu connector dan Flink rusak karena
+  consumer membaca definisi yang salah
+
+Di proyek ini **tidak ada satu pun schema yang perlu didaftarkan
+manual.** Connector CDC mendaftarkan keempatnya otomatis saat Launch,
+dan Flink mendaftarkan schema untuk `on_hand` serta `low_stock` saat
+statement `CREATE TABLE` dijalankan.
+
+File `.avsc` di `schemas/` itu **dokumentasi** — untuk dibaca juri dan
+untuk ditempel ke field "Paste here your schema" di form. Bukan untuk
+di-upload ke Schema Registry.
+
 Yang terpenting: **jangan ubah connector-mu** hanya karena UI tampak
 kosong. Ini murni soal tampilan. Flink membaca schema langsung dari
 Schema Registry, bukan dari message browser, jadi langkah 6 akan jalan
