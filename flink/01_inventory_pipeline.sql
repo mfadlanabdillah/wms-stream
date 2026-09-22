@@ -66,7 +66,8 @@ SELECT
     p.unit                  AS unit,
     CAST(MAX(p.min_stock) AS INT) AS min_stock,
     CAST(SUM(m.qty) AS INT)       AS on_hand,
-    MAX(m.created_at)             AS last_movement_at
+    -- CDC timestamps arrive as TIMESTAMP(6); cast to match the column type.
+    CAST(MAX(m.created_at) AS TIMESTAMP_LTZ(3)) AS last_movement_at
 FROM `wms.public.stock_movements` AS m
 JOIN `wms.public.locations`  AS l ON m.location_id = l.id
 JOIN `wms.public.warehouses` AS w ON l.warehouse_id = w.id
