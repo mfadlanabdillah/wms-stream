@@ -247,14 +247,36 @@ Stream Governance adalah salah satu kriteria penilaian juri.
 Biarkan *Tables excluded* kosong — dua property itu tidak bisa dipakai
 bersamaan.
 
-Lalu buka **Show advanced configurations** → cari bagian **Transforms** →
-tambah SMT:
+Lalu buka **Show advanced configurations** → cari bagian **Single Message
+Transforms** → tambah SMT:
 
 | Field | Isi |
 |---|---|
 | Transform type | `ExtractNewRecordState` |
-| Delete tombstones handling mode | `rewrite` |
-| Add fields | `op,source.ts_ms` |
+| **Transform name** | `wms_transform` (nama bebas) |
+| Transformation version | biarkan default |
+| **Handle delete records** | **kosongkan** (deprecated) |
+| **Handle delete and tombstone records** | `rewrite` |
+| Adds the specified field(s) to the message | `op,source.ts_ms` |
+| **Drop tombstones** | **kosongkan** (deprecated) |
+| sisa field | biarkan kosong |
+
+Tiga hal yang perlu diperhatikan di layar ini:
+
+**Ada dua field yang namanya mirip.** "Handle delete records"
+(`delete.handling.mode`) dan "Drop tombstones" (`drop.tombstones`)
+keduanya **sudah deprecated** — biarkan kosong. Yang benar adalah
+"Handle delete **and tombstone** records"
+(`delete.tombstones.handling.mode`) diisi `rewrite`. Mengisi yang
+deprecated bisa bentrok dengan yang baru.
+
+**Transform name menentukan nama property.** Kalau kamu namai
+`wms_transform`, JSON-nya menjadi `transforms.wms_transform.type` dst.
+Di Cara A aku memakai nama `unwrap`. Keduanya sama-sama benar — namanya
+hanya label internal. Yang penting konsisten, jangan campur.
+
+**Field sisanya biarkan kosong.** Field prefix, header, route by field
+name — semuanya opsional dan tidak dipakai pipeline ini.
 
 SMT ini membuka "envelope" Debezium sehingga isi topic menjadi baris yang
 rata — cocok dengan Avro schema di `schemas/` dan bisa langsung dibaca
