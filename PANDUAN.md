@@ -383,14 +383,73 @@ Skripnya mendukung `--table warehouses|products|locations|stock_movements`.
 Agar UI ikut menampilkannya terbaca, coba salah satu:
 
 - **Refresh halaman** dan buka ulang topic — paling sering langsung beres
-- Cek **Environments → Stream Governance → Schemas**; harus ada subject
-  `wms.public.warehouses-value`. Kalau ada, Schema Registry sehat
 - Pastikan kamu membuka topic dari cluster dan environment yang benar
 
-Yang terpenting: **jangan ubah connector-mu.** Ini murni soal tampilan.
-Flink membaca schema langsung dari Schema Registry, bukan dari message
-browser, jadi langkah 6 akan jalan normal meski UI masih menampilkan
-`__raw__`.
+### "Schema-nya tidak ada di halaman Schemas"
+
+Ini jebakan yang wajar, dan biasanya **schema-nya sebenarnya ada**.
+
+Bukti kuatnya ada di byte message itu sendiri: schema ID `100008`.
+Confluent serializer hanya menulis ID ke record **setelah** schema
+terdaftar. Kalau schema tidak ada, connector akan gagal dengan error
+serialization, bukan menghasilkan message.
+
+Tiga sebab halaman Schemas terlihat kosong:
+
+1. **Salah environment.** Schema Registry itu per-environment. Kalau kamu
+   punya lebih dari satu environment, halaman Schemas hanya menampilkan
+   milik yang sedang aktif.
+2. **Melihat di level cluster.** Schema ada di
+   **Environments → pilih environment → Stream Governance → Schemas** —
+   bukan di dalam halaman cluster.
+3. **Filter pencarian aktif.** Kosongkan kolom search; subject-nya bernama
+   `wms.public.warehouses-value`, bukan `warehouses`.
+
+Cara paling pasti — tanya langsung ke Schema Registry, tanpa UI:
+
+```bash
+# Buat Schema Registry API key (BEDA dari key Kafka di langkah 3):
+#   Environments -> <env> -> API Keys -> Add key -> pilih "Schema Registry"
+# Endpoint SR ada di halaman environment yang sama.
+
+export SR_URL='https://psrc-xxxxx.<region>.<cloud>.confluent.cloud'
+export SR_KEY='<schema-registry-api-key>'
+export SR_SECRET='<schema-registry-api-secret>'
+
+.venv/bin/python scripts/check_schemas.py
+
+# atau periksa ID yang muncul di message tadi:
+.venv/bin/python scripts/check_schemas.py --id 100008
+```
+
+Skrip itu mencantumkan semua subject dan menandai mana yang milik
+pipeline ini. Yang seharusnya ada empat:
+
+```
+wms.public.stock_movements-value
+wms.public.products-value
+wms.public.locations-value
+wms.public.warehouses-value
+```
+
+Cara membaca hasilnya:
+
+| Hasil | Arti |
+|---|---|
+| Keempat subject `OK` | Semua benar. Yang kosong hanya tampilan UI — lanjut ke langkah 6 |
+| Reachable tapi `NO subjects` | Connector memakai JSON, bukan AVRO. Cek `output.data.format` |
+| HTTP 401 | Kamu memakai API key Kafka; Schema Registry butuh key sendiri |
+| `--id 100008` ditemukan | Bukti tuntas bahwa schema terdaftar |
+
+Kalau benar-benar tidak ada subject sama sekali, satu-satunya penyebab
+yang masuk akal adalah connector diluncurkan dengan format JSON. Perbaiki
+di halaman connector: **Configuration → Output record value format →
+AVRO** (dan key format AVRO juga), lalu restart connector.
+
+Yang terpenting: **jangan ubah connector-mu** hanya karena UI tampak
+kosong. Ini murni soal tampilan. Flink membaca schema langsung dari
+Schema Registry, bukan dari message browser, jadi langkah 6 akan jalan
+normal meski UI masih menampilkan `__raw__`.
 
 Kalau topic kosong padahal connector *Running*, cek tab **Logs** di
 halaman connector — pesan errornya biasanya spesifik.
